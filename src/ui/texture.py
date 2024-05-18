@@ -4,6 +4,9 @@ import pygame
 
 # 6c757d
 
+# a9d09e
+# afb57e
+
 class Texture:
     def __init__(self, path, width, height):
         self.path = path
