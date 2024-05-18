@@ -22,12 +22,15 @@ class Server:
 
     def __init__(self):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.serverip = '192.168.0.105'# socket.gethostbyname(socket.gethostname())
+        self.serverip = '192.168.0.104'# socket.gethostbyname(socket.gethostname())
         self.server.bind((self.serverip, Server.port))
         self.players: list[Player] = []
         self.deck: list[Card] = []
         self.connections: list[socket.socket] = []
         self.packeges = []
+        self.player_to_start = 0
+        self.alive: list[bool] = []
+        self.count_alive = 0
 
     def add_player(self, conn: socket.socket, addr: tuple[str, int]):
         id = random.randint(0, 2**32)
@@ -43,6 +46,8 @@ class Server:
                             CardType.back, CardType.back], id, x, y))
         conn.send(str(id).encode())
         self.connections.append(conn)
+        self.alive.append(False)
+        self.count_alive += 1
 
     def add_connection(self, stop_event: threading.Event):
         while not stop_event.is_set():
@@ -156,7 +161,51 @@ class Server:
         self.get_packege(socket)
         print(f"[SET_PLAYER] {player.name} - {player.id}")
 
+    def move_handler(self, conn: socket.socket, data: str):
+        match data:
+            case "contessa":
+                pass
+            case "duke":
+                pass
+            case "captain":
+                pass
+            case "assassin":
+                pass
+            case "ambassador":
+                pass
+            case "passive_income":
+                pass
+            case "foreign_aid":
+                pass
+
+
+
+    def make_move(self,  stop_event: threading.Event):
+        if self.count_alive <= 1:
+            return
+        
+        conn = self.connections[self.player_to_start]
+        conn.send("make_move".encode())
+        print(f"[MAKE_MOVE] {self.players[self.player_to_start].name} - {self.players[self.player_to_start].id}")
+        self.get_packege(conn)
+        data = self.get_packege(conn)
+        self.move_handler(conn, data)
+
+        self.player_to_start += 1
+        self.player_to_start %= len(self.players)
+        
+        while not self.alive[self.player_to_start]:
+            self.player_to_start += 1
+            self.player_to_start %= len(self.players)
+        
+        self.make_move(stop_event)
+
     def begin(self):
+        for i in range(0, len(self.players) - 1):
+            self.alive[i] = True
+
+        if len(self.players) > 0:
+            self.player_to_start = random.randint(0, len(self.players) - 1)
         self.deck = []
         repeat = 3
         if len(self.players) <= 4:
@@ -184,6 +233,13 @@ class Server:
             card.button.rect.x = index * (Card.width + 10) + 10
             card.button.rect.y = height - Card.height - 10
             index += 1
+
+        stop_event = threading.Event()
+        self.move_thread = threading.Thread(
+            target=self.make_move, args=(stop_event,))
+        self.move_thread.daemon = True
+        self.move_thread.start()
+        
 
 
 if __name__ == "__main__":
