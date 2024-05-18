@@ -72,6 +72,34 @@ class Coup:
             self.players.append(Player(name, [CardType.back, CardType.back], id, x, y))
             index += 1
 
+    def update_opponent(self):
+        print(0)
+        self.client.send("received".encode())
+        print(1)
+        message = self.get_packege()
+        print(2)
+        self.client.send("received".encode())
+        print(3)
+        message = message.split(" ")
+        id = int(message[0])
+        coins = int(message[1])
+        card_count = int(message[2])
+        cards: list[CardType] = []
+        
+        for i in range(card_count):
+            cards.append(CardType[message[3 + i]])
+        
+        player: Player
+        for player_ in self.players:
+            if player_.id == id:
+                player = player_
+                break
+        
+        if player is None:
+            return
+        player.coins = coins
+        player.set_cards(cards)
+
     def set_player(self):
         self.client.send("received".encode())
         message = self.get_packege()
@@ -114,7 +142,7 @@ class Coup:
             self.client.send("foreign_aid".encode())
         else:
             self.client.send(CardType(self.move).name.encode())
-        self.move == -1
+        self.move = -1
         self.show_choises = 0
 
     def handler(self, stop_event: threading.Event, screen: pygame.Surface):
@@ -128,6 +156,8 @@ class Coup:
                     threading.Thread(target=self.set_oponents).start()
                 case "make_move":
                     threading.Thread(target=self.make_move, args=(stop_event, screen)).start()
+                case "update_opponent":
+                    threading.Thread(target=self.update_opponent).start()
                 case _:
                     self.packeges.append(message)
 

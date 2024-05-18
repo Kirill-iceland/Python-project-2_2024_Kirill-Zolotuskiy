@@ -31,6 +31,7 @@ class Server:
         self.player_to_start = 0
         self.alive: list[bool] = []
         self.count_alive = 0
+        self.card_lost: list[int] = []
 
     def add_player(self, conn: socket.socket, addr: tuple[str, int]):
         id = random.randint(0, 2**32)
@@ -48,6 +49,7 @@ class Server:
         self.connections.append(conn)
         self.alive.append(False)
         self.count_alive += 1
+        self.card_lost.append(0)
 
     def add_connection(self, stop_event: threading.Event):
         while not stop_event.is_set():
@@ -99,6 +101,29 @@ class Server:
             conn.send(data.encode())
             self.get_packege(conn)
             print(f"[SEND_PLAYERS] {conn.getpeername()}")
+    
+    def update_opponent(self, index: int):
+        for conn in self.connections:
+            conn.send("update_opponent".encode())
+            print(1)
+            self.get_packege(conn)
+            print(2)
+            data = ""
+            data += str(self.players[index].id) + " "
+            data += str(self.players[index].coins) + " "
+            data += str(len(self.players[index].cards)) + " "
+            mask = 1
+            for card in self.players[index].cards:
+                if self.card_lost[index] & 1 == 0:
+                    data += "back "
+                    mask *= 2
+                else:
+                    data += str(card.card_type.name) + " "
+            conn.send(data.encode())
+            print(3)
+            self.get_packege(conn)
+            print(4)
+            print(f"[UPDATE_OPPONENT] {self.players[index].name} - {self.players[index].id}")
 
     def start(self):
         pygame.display.set_icon(pygame.image.load(os.path.join('src', 'textures', 'icon_server.png')))
@@ -129,6 +154,7 @@ class Server:
                     self.players.remove(player)
                     self.connections[index].close()
                     self.connections.pop(index)
+                    self.card_lost.pop(index)
                 index += 1
 
             if self.begin_button.draw(screen):
@@ -174,10 +200,11 @@ class Server:
             case "ambassador":
                 pass
             case "passive_income":
-                pass
+                self.players[self.player_to_start].coins += 1
+                self.update_player(self.players[self.player_to_start], conn)
+                self.update_opponent(self.player_to_start)
             case "foreign_aid":
                 pass
-
 
 
     def make_move(self,  stop_event: threading.Event):
@@ -201,7 +228,7 @@ class Server:
         self.make_move(stop_event)
 
     def begin(self):
-        for i in range(0, len(self.players) - 1):
+        for i in range(0, len(self.players)):
             self.alive[i] = True
 
         if len(self.players) > 0:
