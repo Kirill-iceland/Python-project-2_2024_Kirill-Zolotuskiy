@@ -34,11 +34,13 @@ class Coup:
         self.card_buttons: list[Button] = []
         self.show_choises = 0
         self.move = -1
+        self.select = -1
+        self.discard_card = 0
         
         for type in CardType:
             if type.value == 0:
                 continue
-            self.card_buttons.append(Button(width - 350,    Player.height + 20 + 76 * (type.value - 1), 300, 66))
+            self.card_buttons.append(Button(width - 350, Player.height + 20 + 76 * (type.value - 1), 300, 66))
             self.card_buttons[-1].set_texture(os.path.join("src", "textures", "buttons", type.name + ".png"))
             self.card_buttons[-1].set_hover(os.path.join("src", "textures", "buttons", type.name + "_hover.png"))
 
@@ -48,6 +50,21 @@ class Coup:
         self.card_buttons.append(Button(width - 350,    Player.height + 20 + 76 * 6, 300, 66))
         self.card_buttons[-1].set_texture(os.path.join("src", "textures", "buttons", "foreign_aid.png"))
         self.card_buttons[-1].set_hover(os.path.join("src", "textures", "buttons", "foreign_aid_hover.png"))
+        self.card_buttons.append(Button(width - 350,    Player.height + 20 + 76 * 7, 300, 66))
+        self.card_buttons[-1].set_texture(os.path.join("src", "textures", "buttons", "coup.png"))
+        self.card_buttons[-1].set_hover(os.path.join("src", "textures", "buttons", "coup_hover.png"))
+
+        self.confirm_challange = [Button(width - 350, Player.height + 20, 300, 66), Button(width - 350, Player.height + 96, 300, 66)]
+        self.confirm_challange[0].set_texture(os.path.join("src", "textures", "buttons", "challenge.png"))
+        self.confirm_challange[0].set_hover(os.path.join("src", "textures", "buttons", "challenge_hover.png"))
+        self.confirm_challange[1].set_texture(os.path.join("src", "textures", "buttons", "confirm_timer.png"))
+        self.confirm_challange[1].set_hover(os.path.join("src", "textures", "buttons", "confirm_timer_hover.png"))
+
+        self.foreign_aid = [Button(width - 350, Player.height + 20, 300, 66), Button(width - 350, Player.height + 96, 300, 66)]
+        self.foreign_aid[0].set_texture(os.path.join("src", "textures", "buttons", "duke.png"))
+        self.foreign_aid[0].set_hover(os.path.join("src", "textures", "buttons", "duke_hover.png"))
+        self.foreign_aid[1].set_texture(os.path.join("src", "textures", "buttons", "confirm_timer.png"))
+        self.foreign_aid[1].set_hover(os.path.join("src", "textures", "buttons", "confirm_timer_hover.png"))
         print(self.id)
 
     def add_to_discard(self, card: Card):
@@ -73,13 +90,9 @@ class Coup:
             index += 1
 
     def update_opponent(self):
-        print(0)
         self.client.send("received".encode())
-        print(1)
         message = self.get_packege()
-        print(2)
         self.client.send("received".encode())
-        print(3)
         message = message.split(" ")
         id = int(message[0])
         coins = int(message[1])
@@ -89,7 +102,7 @@ class Coup:
         for i in range(card_count):
             cards.append(CardType[message[3 + i]])
         
-        player: Player
+        player: Player = None
         for player_ in self.players:
             if player_.id == id:
                 player = player_
@@ -122,6 +135,8 @@ class Coup:
                 self.card_buttons[card.value - 1].set_texture(os.path.join("src", "textures", "buttons", card.name + ".png"))
             for card in cards:
                 self.card_buttons[card.value - 1].set_texture(os.path.join("src", "textures", "buttons", card.name + "_select.png"))
+                if card == CardType.duke:
+                    self.foreign_aid[0].set_texture(os.path.join("src", "textures", "buttons", "duke_select.png"))
         else:
             for player_ in self.players:
                 if player_.id == id:
@@ -140,10 +155,53 @@ class Coup:
             self.client.send("passive_income".encode())
         elif self.move == 7:
             self.client.send("foreign_aid".encode())
+        elif self.move == 8:
+            self.client.send("coup".encode())
         else:
             self.client.send(CardType(self.move).name.encode())
         self.move = -1
         self.show_choises = 0
+
+    def get_select(self) -> int:
+        while self.select == -1:
+            pass
+        return self.select
+
+    def confirm(self):
+        self.client.send("received".encode())
+        type = self.get_packege()
+        self.client.send("received".encode())
+        self.select = -1
+        match type:
+            case "foreign_aid":
+                self.show_choises = 3
+                select = self.get_select()
+                if select == 0:
+                    self.client.send("block".encode())
+                    self.get_packege()
+                    self.client.send("duke".encode())
+                else:
+                    self.client.send("confirm".encode())
+                self.get_packege()
+                self.show_choises = 0
+            case "block":
+                self.show_choises = 2
+                select = self.get_select()
+                select = self.get_select()
+                if select == 0:
+                    self.client.send("challenge".encode())
+                else:
+                    self.client.send("confirm".encode())
+                self.get_packege()
+                self.show_choises = 0
+
+    def lose_card(self):
+        while self.discard_card == 0:
+            pass
+        self.add_to_discard(self.this_player.remove_card(self.discard_card))
+        self.discard_card = 0
+        self.client.send(str(self.discard_card).encode())
+        self.get_packege()
 
     def handler(self, stop_event: threading.Event, screen: pygame.Surface):
         while not stop_event.is_set():
@@ -158,6 +216,10 @@ class Coup:
                     threading.Thread(target=self.make_move, args=(stop_event, screen)).start()
                 case "update_opponent":
                     threading.Thread(target=self.update_opponent).start()
+                case "confirm":
+                    threading.Thread(target=self.confirm).start()
+                case "lose_card":
+                    threading.Thread(target=self.lose_card).start()
                 case _:
                     self.packeges.append(message)
 
@@ -177,9 +239,7 @@ class Coup:
 
     def draw(self, screen: pygame.Surface):
         screen.fill((255, 255, 255))
-        res = self.this_player.draw(screen)
-        if res != 0:
-            self.add_to_discard(self.this_player.remove_card(res))
+        self.discard_card = self.this_player.draw(screen)
 
         for card in self.discard:
             card.draw(screen)
@@ -188,11 +248,29 @@ class Coup:
             player.draw(screen)
         
         if self.show_choises == 1:
-            index = 1
+            index = 0
             for button in self.card_buttons:
+                index += 1
+                if index == 1:
+                    continue
+                if index == 8 and self.this_player.coins < 7:
+                    continue
+
                 if button.draw(screen):
-                    if index != 1:
-                        self.move = index
+                    self.move = index
+
+        elif self.show_choises == 2:
+            index = 0
+            for button in self.confirm_challange:
+                if button.draw(screen):
+                    self.select = index
+                index += 1
+                
+        elif self.show_choises == 3:
+            index = 0
+            for button in self.foreign_aid:
+                if button.draw(screen):
+                    self.select = index
                 index += 1
 
         self.name.draw(screen)
@@ -235,7 +313,7 @@ class Coup:
         self.this_player = Player("Player 1", [CardType.ambassador, CardType.back],
                                   self.id, width // 2 - (Player.width // 2), height - Player.height - 20)
         
-        self.name = TextBox(width - 250, height - Player.height - 20, 200, 50)
+        self.name = TextBox(width - 250, height - Player.height - 20 + 76, 200, 50)
         self.name.set_color((255, 255, 255))
         self.name.set_background((156, 170, 189), (108, 117, 125))
 
