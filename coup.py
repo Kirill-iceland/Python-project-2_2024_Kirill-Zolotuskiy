@@ -102,14 +102,15 @@ class Coup:
         for i in range(card_count):
             cards.append(CardType[message[3 + i]])
         
-        player: Player = None
+        player: Player = 0
         for player_ in self.players:
             if player_.id == id:
                 player = player_
                 break
         
-        if player is None:
+        if player == 0:
             return
+        
         player.coins = coins
         player.set_cards(cards)
 
@@ -173,6 +174,15 @@ class Coup:
         self.client.send("received".encode())
         self.select = -1
         match type:
+            case "duke":
+                self.show_choises = 2
+                select = self.get_select()
+                if select == 0:
+                    self.client.send("challenge".encode())
+                else:
+                    self.client.send("confirm".encode())
+                self.get_packege()
+                self.show_choises = 0
             case "foreign_aid":
                 self.show_choises = 3
                 select = self.get_select()
@@ -187,7 +197,6 @@ class Coup:
             case "block":
                 self.show_choises = 2
                 select = self.get_select()
-                select = self.get_select()
                 if select == 0:
                     self.client.send("challenge".encode())
                 else:
@@ -196,12 +205,13 @@ class Coup:
                 self.show_choises = 0
 
     def lose_card(self):
+        self.discard_card = 0
         while self.discard_card == 0:
             pass
         self.add_to_discard(self.this_player.remove_card(self.discard_card))
-        self.discard_card = 0
         self.client.send(str(self.discard_card).encode())
         self.get_packege()
+        self.discard_card = 0
 
     def handler(self, stop_event: threading.Event, screen: pygame.Surface):
         while not stop_event.is_set():
@@ -239,7 +249,8 @@ class Coup:
 
     def draw(self, screen: pygame.Surface):
         screen.fill((255, 255, 255))
-        self.discard_card = self.this_player.draw(screen)
+        if self.discard_card == 0:
+            self.discard_card = self.this_player.draw(screen)
 
         for card in self.discard:
             card.draw(screen)
@@ -310,7 +321,7 @@ class Coup:
         # confirm.set_hover(os.path.join(Coup.button_path, "confirm_hover.png"))
 
         # card1 = Card(CardType.back, 200, 300)
-        self.this_player = Player("Player 1", [CardType.ambassador, CardType.back],
+        self.this_player = Player("Player 1", [CardType.back, CardType.back],
                                   self.id, width // 2 - (Player.width // 2), height - Player.height - 20)
         
         self.name = TextBox(width - 250, height - Player.height - 20 + 76, 200, 50)

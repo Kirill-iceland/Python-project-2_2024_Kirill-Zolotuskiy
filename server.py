@@ -31,7 +31,7 @@ class Server:
         self.player_to_start = 0
         self.alive: list[bool] = []
         self.count_alive = 0
-        self.card_lost: list[int] = []
+        self.card_lost: list[list[CardType]] = []
         self.conformations_left = 0
 
     def add_player(self, conn: socket.socket, addr: tuple[str, int]):
@@ -50,7 +50,7 @@ class Server:
         self.connections.append(conn)
         self.alive.append(False)
         self.count_alive += 1
-        self.card_lost.append(0)
+        self.card_lost.append([])
 
     def add_connection(self, stop_event: threading.Event):
         while not stop_event.is_set():
@@ -110,14 +110,11 @@ class Server:
             data = ""
             data += str(self.players[index].id) + " "
             data += str(self.players[index].coins) + " "
-            data += str(len(self.players[index].cards)) + " "
-            mask = 1
+            data += str(2) + " "
             for card in self.players[index].cards:
-                if self.card_lost[index] & 1 == 0:
-                    data += "back "
-                    mask *= 2
-                else:
-                    data += str(card.card_type.name) + " "
+                data += str(CardType.back.name) + " "
+            for card in self.card_lost[index]:
+                data += str(card.name) + " "
             conn.send(data.encode())
             self.get_packege(conn)
             print(f"[UPDATE_OPPONENT] {self.players[index].name} - {self.players[index].id}")
@@ -197,27 +194,28 @@ class Server:
         conn.send("lose_card".encode())
         card = int(self.get_packege(conn))
         conn.send("received".encode())
+        print(f"[LOSE_CARD] {self.players[player].name} - {self.players[player].id} - {self.players[player].cards[card - 1].card_type.name}")
+        self.card_lost[player].append(self.players[player].cards[card - 1].card_type)
         self.players[player].remove_card(card)
-        self.card_lost[player] += card
+        if len(self.players[player].cards) == 0:
+            self.alive[player] = False
+            self.count_alive -= 1
         self.update_opponent(player)
 
     def challenge(self, challenger: int, player: int, card: CardType):
-        if card in [card.card_type for card in self.players[player].cards]:
-            self.lose_card(challenger)
-            player_card: Card
-            
-            for card_ in self.players[player].cards:
-                if card_.card_type == card:
-                    player_card = card
-                    break
-            
-            player_card.card_type, self.deck[-1].card_type = self.deck[-1].card_type, player_card.card_type
-            player_card.button.texture, self.deck[-1].button.texture = self.deck[-1].button.texture, player_card.button.texture
-            random.shuffle(self.deck)
-            self.update_player(self.players[player], self.connections[player])
+        for card_ in self.players[player].cards:
+            if card_.card_type == card:
+                self.lose_card(challenger)
+                player_card = card_
+                
+                player_card.card_type, self.deck[-1].card_type = self.deck[-1].card_type, player_card.card_type
+                player_card.button.texture, self.deck[-1].button.texture = self.deck[-1].button.texture, player_card.button.texture
+                random.shuffle(self.deck)
+                self.update_player(self.players[player], self.connections[player])
+                return True
         
-        else:
-            self.lose_card(player)
+        self.lose_card(player)
+        return False
 
     def confirm(self, player: int, confirm_type: str, card: CardType = CardType.back):
         self.conformations_left = len(self.players) - 1
@@ -246,13 +244,15 @@ class Server:
             
             case "block":
                 print(f"[BLOCKED] {self.players[player].name} - {self.players[player].id} by {self.players[self.conformation_player].name} - {self.players[self.conformation_player].id}")
-                return not self.confirm(self.conformation_player, "block")
+                card =  self.get_packege(self.connections[self.conformation_player])
+                print(f"[BLOCK_CARD] {card}")
+                card = CardType[card]
+                self.connections[self.conformation_player].send("received".encode())
+                return not self.confirm(self.conformation_player, "block", card)
             
             case "challenge":
                 print(f"[CHALLENGED] {self.players[player].name} - {self.players[player].id} by {self.players[self.conformation_player].name} - {self.players[self.conformation_player].id}")
-                card = self.get_packege(self.connections[self.conformation_player])
-                self.connections[self.conformation_player].send("received".encode())
-                return not self.challenge(self.conformation_player, self.player_to_start, card)
+                return not self.challenge(self.conformation_player, player, card)
 
 
     def move_handler(self, conn: socket.socket, data: str):
@@ -261,7 +261,7 @@ class Server:
                 # No action
                 pass
             case "duke":
-                if self.confirm(self.player_to_start, "duke"):
+                if self.confirm(self.player_to_start, "duke", CardType.duke):
                     return
                 self.players[self.player_to_start].coins += 3
                 self.update_player(self.players[self.player_to_start], conn)
@@ -284,16 +284,20 @@ class Server:
                 self.update_opponent(self.player_to_start)
 
             case "foreign_aid":
-                if not self.confirm(self.player_to_start, "foreign_aid"):
+                if self.confirm(self.player_to_start, "foreign_aid"):
+                    print(33333333)
                     return
+                print(self.player_to_start)
                 self.players[self.player_to_start].coins += 2
                 self.update_player(self.players[self.player_to_start], conn)
                 self.update_opponent(self.player_to_start)
             
             case "coup":
-                self.lose_card(self.get_packege(conn))
+                pass
+                # Will be implemented later
+                # self.lose_card(self.get_packege(conn))
 
-    def make_move(self,  stop_event: threading.Event):
+    def make_move(self, stop_event: threading.Event):
         if self.count_alive <= 1:
             return
         
