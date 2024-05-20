@@ -292,8 +292,6 @@ class Coup:
         self.name.draw(screen)
 
         for event in pygame.event.get():
-            # if confirm.draw(screen):
-            #     pass
             if event.type == pygame.QUIT:
                 self.running = False
             elif event.type == pygame.KEYDOWN and self.name.selected:
@@ -321,11 +319,6 @@ class Coup:
         self.thread.daemon = True
         self.thread.start()
 
-        # confirm = Button(100, 100, 300, 66)
-        # confirm.set_texture(os.path.join(Coup.button_path, "confirm.png"))
-        # confirm.set_hover(os.path.join(Coup.button_path, "confirm_hover.png"))
-
-        # card1 = Card(CardType.back, 200, 300)
         self.this_player = Player("Player 1", [CardType.back, CardType.back],
                                   self.id, width // 2 - (Player.width // 2), height - Player.height - 20)
         

@@ -27,7 +27,7 @@ class Server:
 
     def __init__(self):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.serverip = Config.ip # socket.gethostbyname(socket.gethostname())
+        self.serverip = Config.ip
         self.server.bind((self.serverip, Server.port))
         self.players: list[Player] = []
         self.deck: list[Card] = []
@@ -300,7 +300,6 @@ class Server:
             case "coup":
                 pass
                 # Will be implemented later
-                # self.lose_card(self.get_packege(conn))
 
     def make_move(self, stop_event: threading.Event):
         if self.count_alive <= 1:

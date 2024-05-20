@@ -1,11 +1,4 @@
 import pygame
-# 444444
-# 9caabd
-
-# 6c757d
-
-# a9d09e
-# afb57e
 
 class Texture:
     def __init__(self, path, width, height):
