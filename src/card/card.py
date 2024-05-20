@@ -13,14 +13,18 @@ class Card:
 
     card_path = os.path.join("src", "textures", "cards")
 
-    card_textures = [
-        Texture(os.path.join(card_path, "back.png"), width, height),
-        Texture(os.path.join(card_path, "contessa.png"), width, height),
-        Texture(os.path.join(card_path, "captain.png"), width, height),
-        Texture(os.path.join(card_path, "duke.png"), width, height),
-        Texture(os.path.join(card_path, "assassin.png"), width, height),
-        Texture(os.path.join(card_path, "ambassador.png"), width, height)
-    ]
+    card_textures: list[Texture] = []
+
+    def init():
+        Card.card_textures = [
+            Texture(os.path.join(Card.card_path, "back.png"), Card.width, Card.height),
+            Texture(os.path.join(Card.card_path, "contessa.png"), Card.width, Card.height),
+            Texture(os.path.join(Card.card_path, "captain.png"), Card.width, Card.height),
+            Texture(os.path.join(Card.card_path, "duke.png"), Card.width, Card.height),
+            Texture(os.path.join(Card.card_path, "assassin.png"), Card.width, Card.height),
+            Texture(os.path.join(Card.card_path, "ambassador.png"),Card. width,Card. height)
+        ]
+
 
     def __init__(self, card_type: CardType, x: int, y: int):
         self.card_type = card_type

@@ -5,6 +5,11 @@ import os
 
 import pygame
 
+from src.card.player import Player
+from src.card.card_type import CardType
+from src.card.card import Card
+from src.ui.button import Button
+
 pygame.init()
 pygame.font.init()
 
@@ -12,11 +17,8 @@ width = 1500
 height = 1000
 screen = pygame.display.set_mode([1500, height])
 
-from src.card.player import Player
-from src.card.card_type import CardType
-from src.card.card import Card
-from src.ui.button import Button
-
+Card.init()
+Player.init()
 
 class Server:
     port = 5050

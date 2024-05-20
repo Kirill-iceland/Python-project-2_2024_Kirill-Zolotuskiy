@@ -11,7 +11,11 @@ class Player:
     width = Card.width * 2 + 50
     font_size = 26
     height = Card.height + font_size + 10
-    coin = Texture(os.path.join("src", "textures", "coin.png"), font_size * 1.5, font_size)
+    coin: Texture
+
+    def init():
+        Player.coin = Texture(os.path.join("src", "textures", "coin.png"), Player.font_size * 1.5, Player.font_size)
+        Card.init()
 
     def __init__(self, name: str, cards: list[CardType], id: int, x: int, y: int):
         self.name = name

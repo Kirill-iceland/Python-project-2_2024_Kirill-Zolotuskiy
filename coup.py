@@ -4,12 +4,6 @@ import threading
 
 import pygame
 
-pygame.init()
-pygame.font.init()
-
-width = 1500
-height = 1000
-screen = pygame.display.set_mode([1500, height])
 
 from src.ui.button import Button
 from src.card.card import Card
@@ -17,6 +11,15 @@ from src.card.card_type import CardType
 from src.card.player import Player
 from src.ui.text_box import TextBox
 
+pygame.init()
+pygame.font.init()
+
+width = 1500
+height = 1000
+screen = pygame.display.set_mode([1500, height])
+
+Card.init()
+Player.init()
 
 class Coup:
     server = '192.168.0.104'#"127.0.1.1"
