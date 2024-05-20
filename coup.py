@@ -10,6 +10,7 @@ from src.card.card import Card
 from src.card.card_type import CardType
 from src.card.player import Player
 from src.ui.text_box import TextBox
+from config import Config
 
 pygame.init()
 pygame.font.init()
@@ -22,10 +23,10 @@ Card.init()
 Player.init()
 
 class Coup:
-    server = '192.168.0.104'#"127.0.1.1"
-    port = 5050
+    server = Config.ip
+    port = Config.port
     address = (server, port)
-    header = 64
+    header = Config.header
 
     def __init__(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

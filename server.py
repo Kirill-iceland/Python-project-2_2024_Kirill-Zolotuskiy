@@ -9,6 +9,7 @@ from src.card.player import Player
 from src.card.card_type import CardType
 from src.card.card import Card
 from src.ui.button import Button
+from config import Config
 
 pygame.init()
 pygame.font.init()
@@ -21,12 +22,12 @@ Card.init()
 Player.init()
 
 class Server:
-    port = 5050
-    header = 64
+    port = Config.port
+    header = Config.header
 
     def __init__(self):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.serverip = '192.168.0.104'# socket.gethostbyname(socket.gethostname())
+        self.serverip = Config.ip # socket.gethostbyname(socket.gethostname())
         self.server.bind((self.serverip, Server.port))
         self.players: list[Player] = []
         self.deck: list[Card] = []
