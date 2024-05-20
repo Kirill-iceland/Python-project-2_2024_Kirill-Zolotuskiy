@@ -12,21 +12,25 @@ from src.card.player import Player
 from src.ui.text_box import TextBox
 from config import Config
 
-pygame.init()
-pygame.font.init()
-
-width = 1500
-height = 1000
-screen = pygame.display.set_mode([1500, height])
-
-Card.init()
-Player.init()
 
 class Coup:
     server = Config.ip
     port = Config.port
     address = (server, port)
     header = Config.header
+    
+    width = Config.width
+    height = Config.height 
+    screen: pygame.Surface
+
+    def init():
+        pygame.init()
+        pygame.font.init()
+
+        Coup.screen = pygame.display.set_mode([1500, Coup.height])
+
+        Card.init()
+        Player.init()
 
     def __init__(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -45,27 +49,27 @@ class Coup:
         for type in CardType:
             if type.value == 0:
                 continue
-            self.card_buttons.append(Button(width - 350, Player.height + 20 + 76 * (type.value - 1), 300, 66))
+            self.card_buttons.append(Button(Coup.width - 350, Player.height + 20 + 76 * (type.value - 1), 300, 66))
             self.card_buttons[-1].set_texture(os.path.join("src", "textures", "buttons", type.name + ".png"))
             self.card_buttons[-1].set_hover(os.path.join("src", "textures", "buttons", type.name + "_hover.png"))
 
-        self.card_buttons.append(Button(width - 350,    Player.height + 20 + 76 * 5, 300, 66))
+        self.card_buttons.append(Button(Coup.width - 350,    Player.height + 20 + 76 * 5, 300, 66))
         self.card_buttons[-1].set_texture(os.path.join("src", "textures", "buttons", "passive_income.png"))
         self.card_buttons[-1].set_hover(os.path.join("src", "textures", "buttons", "passive_income_hover.png"))
-        self.card_buttons.append(Button(width - 350,    Player.height + 20 + 76 * 6, 300, 66))
+        self.card_buttons.append(Button(Coup.width - 350,    Player.height + 20 + 76 * 6, 300, 66))
         self.card_buttons[-1].set_texture(os.path.join("src", "textures", "buttons", "foreign_aid.png"))
         self.card_buttons[-1].set_hover(os.path.join("src", "textures", "buttons", "foreign_aid_hover.png"))
-        self.card_buttons.append(Button(width - 350,    Player.height + 20 + 76 * 7, 300, 66))
+        self.card_buttons.append(Button(Coup.width - 350,    Player.height + 20 + 76 * 7, 300, 66))
         self.card_buttons[-1].set_texture(os.path.join("src", "textures", "buttons", "coup.png"))
         self.card_buttons[-1].set_hover(os.path.join("src", "textures", "buttons", "coup_hover.png"))
 
-        self.confirm_challange = [Button(width - 350, Player.height + 20, 300, 66), Button(width - 350, Player.height + 96, 300, 66)]
+        self.confirm_challange = [Button(Coup.width - 350, Player.height + 20, 300, 66), Button(Coup.width - 350, Player.height + 96, 300, 66)]
         self.confirm_challange[0].set_texture(os.path.join("src", "textures", "buttons", "challenge.png"))
         self.confirm_challange[0].set_hover(os.path.join("src", "textures", "buttons", "challenge_hover.png"))
         self.confirm_challange[1].set_texture(os.path.join("src", "textures", "buttons", "confirm_timer.png"))
         self.confirm_challange[1].set_hover(os.path.join("src", "textures", "buttons", "confirm_timer_hover.png"))
 
-        self.foreign_aid = [Button(width - 350, Player.height + 20, 300, 66), Button(width - 350, Player.height + 96, 300, 66)]
+        self.foreign_aid = [Button(Coup.width - 350, Player.height + 20, 300, 66), Button(Coup.width - 350, Player.height + 96, 300, 66)]
         self.foreign_aid[0].set_texture(os.path.join("src", "textures", "buttons", "duke.png"))
         self.foreign_aid[0].set_hover(os.path.join("src", "textures", "buttons", "duke_hover.png"))
         self.foreign_aid[1].set_texture(os.path.join("src", "textures", "buttons", "confirm_timer.png"))
@@ -310,24 +314,24 @@ class Coup:
         icon = pygame.image.load(os.path.join('src', 'textures', 'icon.png'))
         pygame.display.set_icon(icon)
         pygame.display.set_caption("Coup")
-        screen.fill((255, 255, 255))
+        Coup.screen.fill((255, 255, 255))
         self.running = True
 
         stop_event = threading.Event()
         self.thread = threading.Thread(
-            target=self.handler, args=(stop_event, screen))
+            target=self.handler, args=(stop_event, Coup.screen))
         self.thread.daemon = True
         self.thread.start()
 
         self.this_player = Player("Player 1", [CardType.back, CardType.back],
-                                  self.id, width // 2 - (Player.width // 2), height - Player.height - 20)
+                                  self.id, Coup.width // 2 - (Player.width // 2), Coup.height - Player.height - 20)
         
-        self.name = TextBox(width - 250, height - Player.height - 20 + 76, 200, 50)
+        self.name = TextBox(Coup.width - 250, Coup.height - Player.height - 20 + 76, 200, 50)
         self.name.set_color((255, 255, 255))
         self.name.set_background((156, 170, 189), (108, 117, 125))
 
         while self.running:
-            self.draw(screen)
+            self.draw(Coup.screen)
 
         pygame.quit()
         self.client.close()
@@ -335,5 +339,6 @@ class Coup:
 
 
 if __name__ == '__main__':
+    Coup.init()
     coup = Coup()
     coup.start()

@@ -11,19 +11,23 @@ from src.card.card import Card
 from src.ui.button import Button
 from config import Config
 
-pygame.init()
-pygame.font.init()
-
-width = 1500
-height = 1000
-screen = pygame.display.set_mode([1500, height])
-
-Card.init()
-Player.init()
 
 class Server:
     port = Config.port
     header = Config.header
+
+    width = Config.width
+    height = Config.height 
+    screen: pygame.Surface
+
+    def init():
+        pygame.init()
+        pygame.font.init()
+
+        Server.screen = pygame.display.set_mode([1500, Server.height])
+
+        Card.init()
+        Player.init()
 
     def __init__(self):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -139,28 +143,28 @@ class Server:
         self.thread.start()
 
         cards_width = (3 * (Player.width + 70) + 10)
-        button_x = (width - cards_width) // 2 - 300 // 2 + cards_width
+        button_x = (Server.width - cards_width) // 2 - 300 // 2 + cards_width
         self.begin_button = Button(button_x, 50, 300, 66)
         self.begin_button.set_texture(os.path.join(Button.button_path, "start.png"))
         self.begin_button.set_hover(os.path.join(Button.button_path, "start_hover.png"))
 
         while running:
-            screen.fill((255, 255, 255))
+            Server.screen.fill((255, 255, 255))
 
             index = 0
             for player in self.players:
-                if player.draw(screen) != 0:
+                if player.draw(Server.screen) != 0:
                     self.players.remove(player)
                     self.connections[index].close()
                     self.connections.pop(index)
                     self.card_lost.pop(index)
                 index += 1
 
-            if self.begin_button.draw(screen):
+            if self.begin_button.draw(Server.screen):
                 self.begin()
 
             for card in self.deck:
-                card.draw(screen)
+                card.draw(Server.screen)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -352,7 +356,7 @@ class Server:
         index = 0
         for card in self.deck:
             card.button.rect.x = index * (Card.width + 10) + 10
-            card.button.rect.y = height - Card.height - 10
+            card.button.rect.y = Server.height - Card.height - 10
             index += 1
 
         stop_event = threading.Event()
@@ -364,5 +368,6 @@ class Server:
 
 
 if __name__ == "__main__":
+    Server.init()
     server = Server()
     server.start()
