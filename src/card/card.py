@@ -1,5 +1,6 @@
-import pygame
 import os
+
+import pygame
 
 from src.card.card_type import CardType
 from src.ui.texture import Texture

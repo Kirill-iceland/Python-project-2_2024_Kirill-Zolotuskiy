@@ -1,15 +1,17 @@
 import socket
 import random
-import pygame
 import threading
 import os
-from time import sleep
+
+import pygame
 
 pygame.init()
 pygame.font.init()
+
 width = 1500
 height = 1000
 screen = pygame.display.set_mode([1500, height])
+
 from src.card.player import Player
 from src.card.card_type import CardType
 from src.card.card import Card

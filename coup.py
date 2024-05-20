@@ -1,11 +1,12 @@
-import pygame
 import socket
 import os
 import threading
-from time import sleep
+
+import pygame
 
 pygame.init()
 pygame.font.init()
+
 width = 1500
 height = 1000
 screen = pygame.display.set_mode([1500, height])
